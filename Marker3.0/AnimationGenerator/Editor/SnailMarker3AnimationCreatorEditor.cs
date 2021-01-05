@@ -24,6 +24,7 @@ public class SnailMarker3AnimationCreatorEditor : Editor
     //animation stuff
     private AnimationClip eraseClip;
     private AnimationClip drawClip;
+    private AnimationClip resetClip;
     private AnimationClip toggleOnClip;
     private AnimationClip toggleOffClip;
 
@@ -33,6 +34,7 @@ public class SnailMarker3AnimationCreatorEditor : Editor
     private Hand hand = Hand.Right;
     private VRCGesture activateGesture = VRCGesture.FingerPoint;
     private VRCGesture resetGesture = VRCGesture.HandOpen;
+    private int markerRenderTime = 120;
 
     public void OnEnable()
     {
@@ -64,6 +66,9 @@ public class SnailMarker3AnimationCreatorEditor : Editor
             hand = (Hand)EditorGUILayout.EnumPopup("Hand:", hand);
             activateGesture = (VRCGesture)EditorGUILayout.EnumPopup("Activate Gesture:", activateGesture);
             resetGesture = (VRCGesture)EditorGUILayout.EnumPopup("Reset Gesture:", resetGesture);
+            markerRenderTime = EditorGUILayout.IntField("Marker Render Time:", markerRenderTime);
+            obj.GetComponent<TrailRenderer>().time = markerRenderTime;
+
 
             GUILayout.Label("Select a location for the marker:");
             ShowMenuFoldout(avatarDescriptor.expressionsMenu, "Expressions Menu");
@@ -413,6 +418,7 @@ public class SnailMarker3AnimationCreatorEditor : Editor
             WriteGestureAnimations();
             activateMarkerState.motion = drawClip;
             eraseAllState.motion = eraseClip;
+            idleState.motion = resetClip;
             fxController.AddLayer(layer);
         }
     }
@@ -493,8 +499,17 @@ public class SnailMarker3AnimationCreatorEditor : Editor
         draw.SetCurve(animationPath, typeof(TrailRenderer), "m_Emitting", drawCurve);
         CreateAsset(draw, "Drawing.anim");
 
+        // Curve that sets a property to 120 over the course of 1 frame.
+        AnimationCurve timeCurve = AnimationCurve.Linear(0, markerRenderTime, keyframe, markerRenderTime);
+        AnimationClip reset = new AnimationClip();
+        reset.SetCurve(animationPath, typeof(TrailRenderer), "m_Emitting", zeroCurve);
+        reset.SetCurve(animationPath, typeof(TrailRenderer), "m_Time", timeCurve);
+
+        CreateAsset(reset, "Reset.anim");
+
         eraseClip = erase;
         drawClip = draw;
+        resetClip = reset;
     }
     /************************
         End Animations
